@@ -7,7 +7,8 @@ movie_profit <- movie_profit_raw %>%
   mutate(
     release_date = mdy(release_date),
     profit_ratio = worldwide_gross / production_budget,
-    decade = 10 * floor(year(release_date) / 10),
+    year = year(release_date),
+    decade = 10 * floor(year / 10),
     distributor_top7 = fct_lump(distributor, 7),
     md = yday(release_date),
     month_day = paste(month(release_date, label = TRUE), day(release_date),sep = "-")
@@ -19,6 +20,7 @@ movie_profit <- movie_profit_raw %>%
   )
 
 movie_profit$distributor_top7[is.na(movie_profit$distributor_top7)] <- "Other"
+movie_profit$year <- as.integer(movie_profit$year)
 movie_profit$decade <- as.integer(movie_profit$decade)
 
 write.csv(movie_profit, file = "data/movie_profit.csv")
