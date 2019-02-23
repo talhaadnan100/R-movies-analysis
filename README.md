@@ -16,11 +16,11 @@ The world's biggest distributors have grown significantly in the past 50 years b
 
 A look at the most profitable movies.
 
-<img src="img/hollywoods-best-pay-offs.png" align="center" height="480" width="480"/>
+<img src="img/hollywoods-best-pay-offs.png" align="center" height="367" width="500"/>
 
 The most popular date for movie releases is Christmas Day.
 
-<img src="img/10-most-popular-release-dates.png" align="center" height="480" width="480"/>
+<img src="img/10-most-popular-release-dates.png" align="center" height="367" width="500"/>
 
 ### Dependencies
 
