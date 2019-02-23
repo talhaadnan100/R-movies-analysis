@@ -1,0 +1,228 @@
+---
+title: "Exporatory Data Analysis"
+author: "Talha S."
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r warning=FALSE, message=FALSE}
+library(tidyverse)
+library(scales)
+library(lubridate)
+library(plotly)
+library(gridExtra)
+library(gganimate)
+theme_set(theme_light())
+```
+
+```{r import, message=FALSE}
+movie_profit <- read_csv("data/movie_profit.csv")
+```
+
+## Release Timing
+
+### What are the most popular release dates?
+
+```{r release-dates}
+movie_profit %>% 
+  group_by(md, month_day) %>% 
+  tally(sort = TRUE) %>% 
+  head(10) %>% 
+  ggplot(aes(fct_reorder(month_day, md), n, fill = month_day)) + 
+  geom_col() + theme(legend.position = "none") +
+  labs(
+    title = "Top 10 most popular release dates",
+    x = "",
+    y = ""
+  )
+```
+
+Christmas stands out as the most popular time for movie releases.
+
+### Do movies of different genres get released on different dates of the year?
+
+```{r release-dates-by-genre}
+
+grid.arrange(
+  movie_profit %>% 
+  filter(genre=="Action") %>% 
+  group_by(md, month_day) %>% 
+  tally(sort = TRUE) %>% 
+  head(4) %>% 
+  ggplot(aes(fct_reorder(month_day, md), n, fill = month_day)) + 
+  geom_col() + theme(legend.position = "none") +
+  labs(
+    title = "Top Action movies release dates",
+    x = "",
+    y = ""
+  ),
+  movie_profit %>% 
+  filter(genre=="Adventure") %>% 
+  group_by(md, month_day) %>% 
+  tally(sort = TRUE) %>% 
+  head(4) %>% 
+  ggplot(aes(fct_reorder(month_day, md), n, fill = month_day)) + 
+  geom_col() + theme(legend.position = "none") +
+  labs(
+    title = "Top Adventure movies release dates",
+    x = "",
+    y = ""
+  ),
+  movie_profit %>% 
+  filter(genre=="Horror") %>% 
+  group_by(md, month_day) %>% 
+  tally(sort = TRUE) %>% 
+  head(4) %>% 
+  ggplot(aes(fct_reorder(month_day, md), n, fill = month_day)) + 
+  geom_col() + theme(legend.position = "none") +
+  labs(
+    title = "Top Horror movies release dates",
+    x = "",
+    y = ""
+  ),
+  movie_profit %>% 
+  filter(genre=="Drama") %>% 
+  group_by(md, month_day) %>% 
+  tally(sort = TRUE) %>% 
+  head(4) %>% 
+  ggplot(aes(fct_reorder(month_day, md), n, fill = month_day)) + 
+  geom_col() + theme(legend.position = "none") +
+  labs(
+    title = "Top Drama movies release dates",
+    x = "",
+    y = ""
+  ),
+  movie_profit %>% 
+  filter(genre=="Comedy") %>% 
+  group_by(md, month_day) %>% 
+  tally(sort = TRUE) %>% 
+  head(4) %>% 
+  ggplot(aes(fct_reorder(month_day, md), n, fill = month_day)) + 
+  geom_col() + theme(legend.position = "none") +
+  labs(
+    title = "Top Comedy movies release dates",
+    x = "",
+    y = ""
+  )
+)
+```
+
+Horror Movie genre stands out in this regard as movies of all other genres come out the most on Christmas day, but halloween season suits the Horror genre.
+
+## Production Budget
+
+### Which distributors have poured in the most budget per movie?
+
+```{r budget-per-distributor}
+movie_profit %>% 
+  group_by(distributor_top7) %>% 
+  summarise(budget_per_movie = mean(production_budget)) %>%
+  ggplot(aes(fct_reorder(distributor_top7, budget_per_movie), budget_per_movie, fill = distributor_top7)) +
+  geom_col() + 
+  coord_flip() + 
+  labs(
+    title = "Average budget per movie",
+    x = "Distributor",
+    y = "Budget per Movie"
+  )
+```
+
+### Hollywood's best pay offs
+
+```{r best-pay-offs}
+movie_profit %>%
+  mutate(profit = worldwide_gross - production_budget) %>% 
+  arrange(desc(profit)) %>%
+  head(15) %>% 
+  ggplot(aes(y=profit, x=fct_reorder(movie, profit), fill = mpaa_rating)) + 
+  geom_col() + 
+  coord_flip() + 
+  labs(
+    title = "Most Profitable movies",
+    x = "",
+    y = "Net Profit"
+  )
+```
+
+```{r best-and-worst}
+movie_profit %>% 
+  group_by(genre) %>% 
+  summarise(Best = max(profit_ratio),
+            Worst = min(profit_ratio))
+```
+
+### How rewarding are high production budgets?
+
+```{r ROI}
+movie_profit %>% 
+  ggplot(aes(production_budget, worldwide_gross)) + 
+  geom_point(aes(colour = genre), alpha = 0.2) + 
+  scale_x_log10(labels = dollar_format()) + scale_y_log10(labels = dollar_format()) +
+  geom_smooth(method = "lm", se = FALSE, colour = "red") + 
+  labs(
+    title = "Movie Return on Investment",
+    x = "Production Budget (USD)",
+    y = "Worldwide Gross (USD)"
+  )
+```
+
+## Revenue & Budget: Last 50 years of cinema
+
+```{r revenue-budget-50-years}
+movie_profit %>% 
+  filter(year(release_date) > 1968,
+         distributor_top7 != "Other" & distributor_top7 != "Lionsgate") %>% 
+  group_by(distributor_top7, decade) %>% 
+  summarise(
+    production_budget = sum(production_budget),
+    worldwide_gross = sum(worldwide_gross),
+    movies = n()
+  ) %>% 
+  gather(key = RevenueBudget, value = Amount, -distributor_top7, -decade, -movies) %>% 
+  ggplot(aes(x = distributor_top7, y = Amount, fill = RevenueBudget)) + 
+  geom_bar(stat = "identity", position = position_dodge()) + 
+  scale_y_continuous(labels = dollar_format()) + coord_flip() + 
+  theme(legend.position = "none") +
+# Add time transition to above plot
+  labs(title = '50 Years of The Five Biggest Movie Distributors',
+       subtitle = 'Worldwide Gross (Teal) & Production Budgets (Pink) Year: {frame_time}', x = "",
+        y = 'U.S. Dollars') +
+  transition_time(as.integer(decade)) +
+  ease_aes('linear')
+```
+
+
+
+## Appendix
+
+
+```{r exit}
+knitr::knit_exit()
+```
+
+## Scrap Work
+
+
+```{r scrap-revenue-budget-50-years}
+movie_profit %>% 
+  filter(year(release_date) > 1967) %>% 
+  group_by(genre, decade) %>% 
+  summarise(
+    production_budget = median(production_budget),
+    worldwide_gross = median(worldwide_gross),
+    movies = n()
+  ) %>% 
+  ggplot(aes(production_budget, worldwide_gross, colour = genre)) +
+  geom_point(aes(size = movies)) +
+  scale_x_log10(labels = dollar_format()) + 
+  scale_y_log10(labels = dollar_format()) + 
+# Add time transition to above plot
+  labs(title = 'Revenue & Budget: Last 50 years of cinema',
+       subtitle = 'Year: {frame_time}', 
+       x = 'Median Production Budget', y = 'Median Worldwide Gross Revenue') +
+  transition_time(as.integer(decade)) +
+  ease_aes('linear')
+```
